@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feliz Cumpleaños Mi Amor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden; /* Oculta barras de desplazamiento */
+            background-color: #000000; /* Fondo negro */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            color: #ffffff;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; /* Para que el canvas esté detrás del texto */
+        }
+
+        .content {
+            position: relative;
+            z-index: 2; /* Para que el contenido esté encima del canvas */
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3.5em; /* Tamaño grande para el título */
+            color: #ff007f; /* Rosa neón */
+            text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #ff007f;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 1.5em;
+            color: #ffffff;
+            text-shadow: 0 0 5px #ffffff;
+            margin-top: 20px;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 1.2em;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Opcional: Estrellas de fondo animadas */
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            background: transparent;
+            animation: moveStars 100s linear infinite;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 5s infinite ease-in-out alternate;
+        }
+
+        @keyframes moveStars {
+            from { background-position: 0 0; }
+            to { background-position: -10000px -10000px; }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.5); }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars-container"></div>
+    <canvas id="heartCanvas"></canvas>
+
+    <div class="controls">
+        <button class="control-button" onclick="toggleAudio()">🎵</button>
+        <button class="control-button" onclick="toggleFullscreen()"> expand</button>
+    </div>
+
+    <div class="content">
+        <h1>Feliz Cumpleaños Mi Amor</h1>
+        <p>¡Eres la persona más especial en mi vida!</p>
+        <p>Te amo con todo mi corazón.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const numParticles = 2000; // Más partículas para un corazón más denso
+        const maxDist = 80; // Distancia máxima para conectar partículas
+        const particleSize = 1.5; // Tamaño de las partículas
+        const heartColor = 'rgba(255, 0, 127, 1)'; // Rosa neón
+        const lineColor = 'rgba(255, 0, 127, 0.2)'; // Líneas más tenues
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Función para la forma de corazón (ecuación paramétrica)
+        function heart(t) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return { x, y };
+        }
+
+        class Particle {
+            constructor() {
+                this.t = Math.random() * (2 * Math.PI); // Posición inicial aleatoria en la curva del corazón
+                this.speed = 0.005 + Math.random() * 0.005; // Velocidad de movimiento alrededor del corazón
+                this.opacity = 0;
+                this.fadeIn = true;
+                this.x = 0;
+                this.y = 0;
+                this.updatePosition();
+            }
+
+            updatePosition() {
+                this.t += this.speed;
+                if (this.t > 2 * Math.PI) {
+                    this.t -= 2 * Math.PI;
+                }
+                const { x, y } = heart(this.t);
+                const scale = Math.min(canvas.width, canvas.height) / 30; // Escala el corazón al tamaño de la ventana
+                this.x = x * scale + canvas.width / 2;
+                this.y = -y * scale + canvas.height / 2 - 50; // Ajusta la posición vertical
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, particleSize, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 0, 127, ${this.opacity})`;
+                ctx.fill();
+            }
+
+            update() {
+                this.updatePosition();
+
+                if (this.fadeIn) {
+                    this.opacity += 0.02;
+                    if (this.opacity >= 1) {
+                        this.opacity = 1;
+                        this.fadeIn = false;
+                    }
+                } else {
+                    this.opacity -= 0.005; // Desvanecimiento lento para efecto de brillo
+                    if (this.opacity <= 0) {
+                        this.opacity = 0;
+                        this.fadeIn = true; // Reiniciar para un efecto continuo de pulsación/brillo
+                        this.t = Math.random() * (2 * Math.PI); // Reinicia la posición
+                        this.speed = 0.005 + Math.random() * 0.005;
+                    }
+                }
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpia el canvas
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Trail effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dist = Math.sqrt(
+                        Math.pow(particles[i].x - particles[j].x, 2) +
+                        Math.pow(particles[i].y - particles[j].y, 2)
+                    );
+
+                    if (dist < maxDist) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(255, 0, 127, ${1 - dist / maxDist})`;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+
+        // Control de audio (sin archivo de audio, solo para mostrar la función)
+        let isPlaying = false;
+        function toggleAudio() {
+            // Aquí iría la lógica para reproducir/pausar un audio
+            // Ejemplo: const audio = new Audio('tu_cancion.mp3');
+            // if (isPlaying) { audio.pause(); } else { audio.play(); }
+            isPlaying = !isPlaying;
+            alert(isPlaying ? 'Reproduciendo audio (simulado)' : 'Audio pausado (simulado)');
+        }
+
+        // Control de pantalla completa
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error al intentar ir a pantalla completa: ${err.message} (${err.name})`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Generar estrellas de fondo
+        const starsContainer = document.getElementById('stars-container');
+        function createStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.width = star.style.height = (Math.random() * 3 + 1) + 'px';
+            star.style.top = (Math.random() * 100) + '%';
+            star.style.left = (Math.random() * 100) + '%';
+            star.style.animationDelay = (Math.random() * 5) + 's';
+            starsContainer.appendChild(star);
+        }
+
+        for (let i = 0; i < 150; i++) { // Número de estrellas
+            createStar();
+        }
+    </script>
+</body>
+</html>
